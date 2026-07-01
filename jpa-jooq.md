@@ -10,8 +10,6 @@ Part 1: JPA / Hibernate
 - [Inheritance strategies](#inheritance-strategies)
 - [N+1 problem and fixes](#n1-problem-and-fixes)
 - [JPQL](#jpql)
-- [Criteria API and Specifications](#criteria-api-and-specifications)
-- [JPQL vs Criteria (choosing)](#jpql-vs-criteria-choosing)
 - [First and second-level cache](#first-and-second-level-cache)
 - [Transactional semantics](#transactional-semantics)
 - [Optimistic vs pessimistic locking](#optimistic-vs-pessimistic-locking)
@@ -19,7 +17,11 @@ Part 1: JPA / Hibernate
 - [Spring Data repositories and projections](#spring-data-repositories-and-projections)
 - [Testcontainers testing (JPA)](#testcontainers-testing-jpa)
 
-Part 2: jOOQ
+Part 2: Criteria API
+- [Criteria API and Specifications](#criteria-api-and-specifications)
+- [JPQL vs Criteria (choosing)](#jpql-vs-criteria-choosing)
+
+Part 3: jOOQ
 - [Why jOOQ](#why-jooq)
 - [Setup and codegen](#setup-and-codegen)
 - [Basic CRUD with the DSL](#basic-crud-with-the-dsl)
@@ -242,19 +244,19 @@ private List<OrderLine> lines;
 
 Gotchas: `JOIN FETCH` two `List`s -> `MultipleBagFetchException`; EAGER-everywhere to "fix" N+1 explodes the graph; forgetting `distinct` returns one parent per child row; `@BatchSize` too high blows the bind limit.
 
-### EntityGraph: Spring Data vs standard Jakarta Persistence
+### EntityGraph: standard Java EE / Jakarta vs Spring Data
 
 `@EntityGraph(attributePaths = {...})` on a repository method is a Spring Data
-convenience. The portable Jakarta EE / JPA API has no such annotation - you either
-declare a `@NamedEntityGraph` on the entity and pass it as a query hint, or build a
-graph programmatically from the `EntityManager`. All three drive the same Hibernate
-fetch plan.
+convenience. The portable Java EE / Jakarta Persistence API has no such annotation -
+you either declare a `@NamedEntityGraph` on the entity and pass it as a query hint, or
+build a graph programmatically from the `EntityManager`. All three drive the same
+Hibernate fetch plan.
 
-| Style | API | Needs Spring |
+| Flavor | API | Portable? |
 |---|---|---|
-| Spring Data shortcut | `@EntityGraph(attributePaths=...)` on repo method | yes |
-| Named graph + hint | `@NamedEntityGraph` + `jakarta.persistence.fetchgraph` / `loadgraph` | no |
-| Programmatic graph | `em.createEntityGraph(...)` + `addAttributeNodes/addSubgraph` | no |
+| Java EE / Jakarta - named graph | `@NamedEntityGraph` on entity + `setHint("jakarta.persistence.fetchgraph" / "loadgraph", g)` | yes |
+| Java EE / Jakarta - programmatic | `em.createEntityGraph(...)` + `addAttributeNodes` / `addSubgraph` + hint | yes |
+| Spring Data | `@EntityGraph(attributePaths=...)` or `@EntityGraph(value="Named")` on repo method | Spring only |
 
 Hint key meaning is the same as the Spring `type`: `jakarta.persistence.fetchgraph`
 = listed paths EAGER, everything else LAZY (== `type=FETCH`);
@@ -516,7 +518,7 @@ Gotchas: `@DataJpaTest` silently swaps in H2 unless `@AutoConfigureTestDatabase(
 
 ---
 
-# Part 2: Criteria
+# Part 2: Criteria API
 
 ## Criteria API and Specifications
 
